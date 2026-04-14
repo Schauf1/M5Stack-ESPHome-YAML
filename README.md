@@ -1,7 +1,7 @@
 # M5Stack-ESPHome-YAML
 YAML for various M5Stack microcontrollers and addons for use with ESPHome in Home Assistant.
 
-## NanoC6_Unit_Relay
+## NanoC6_Unit_Relay.yaml
 M5Stack NanoC6 Controller with Unit Relay
 
 Working: 

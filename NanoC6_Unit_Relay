@@ -37,7 +37,7 @@ captive_portal:
     
 ## ESP32 Bluetooth Proxy ##
 bluetooth_proxy:
-  active: False
+  active: False #Set to True for use with Airthings BLE integration
 
 esp32_ble_tracker:
   scan_parameters:

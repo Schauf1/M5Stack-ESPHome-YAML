@@ -1,0 +1,134 @@
+esphome:
+  name: garage-m5stack-nanoc6
+  friendly_name: Garage M5stack NanoC6
+
+esp32:
+  board: esp32-c6-devkitc-1
+  framework:
+    type: esp-idf
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  manual_ip:  #Comment out following lines for DHCP. But I reserved and manually assigned this IP to avoid mDNS issues in ESPHome
+    static_ip: 192.168.1.220
+    gateway: 192.168.1.1
+    subnet: 255.255.255.0
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Garge-M5Stack-Nanoc6"
+    password: !secret ap_password
+
+captive_portal:
+    
+## ESP32 Bluetooth Proxy ##
+bluetooth_proxy:
+  active: False
+
+esp32_ble_tracker:
+  scan_parameters:
+    active: False
+
+sensor:
+  - platform: internal_temperature
+    name: "NanoC6 CPU Temperature"
+    id: nanoc6_cpu_temp
+    update_interval: 15s
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    update_interval: 15s
+  - platform: uptime
+    type: seconds
+    name: Uptime Sensor
+    entity_category: diagnostic
+    update_interval: 15s
+#  - platform: template
+#    name: "Hardware Random Number"
+#    id: hw_rng
+#    unit_of_measurement: ""
+#    accuracy_decimals: 0
+#    update_interval: 10s
+#    lambda: |-
+#      // esp_random() returns a uint32_t (0 to 4,294,967,295)
+#      return esp_random();
+
+light:
+  ## Note: GPIO19 must be enabled as it provides power to the RGB LED driver. See "NanoC6 RGB LED Power" switch.
+  - platform: esp32_rmt_led_strip
+    rgb_order: GRB
+    pin: GPIO20
+    num_leds: 1
+    id: rgb_led
+    name: "NanoC6 RGB LED"
+    chipset: WS2812
+    icon: "mdi:led-outline"
+    default_transition_length: 0.2s
+    effects:
+    - random:
+    - flicker:
+    - pulse:
+    - addressable_rainbow:
+  ## Note: Blue status LED is independant of the RGB led and does not require GPIO19 enabled.
+  - platform: status_led
+    id: stat_led
+    name: "NanoC6 Status LED"
+    pin: GPIO7
+    restore_mode: ALWAYS_OFF
+    icon: "mdi:led-outline"
+#   Switch for IR LED Transmitter for testing. (working)
+#  - platform: status_led
+#    id: ir_led
+#    name: "NanoC6 IR LED"
+#    pin: GPIO3
+#    restore_mode: ALWAYS_OFF
+#    icon: "mdi:led-outline"
+
+switch:
+  ## Garage door relay switch, momentary (1s), enables blue status led when relay is closed.
+  - platform: gpio
+    pin: GPIO2 # This corresponds to the Yellow wire/SCL on the Grove port
+    name: "M5 Unit Relay"
+    id: unit_relay
+    icon: "mdi:garage"
+    restore_mode: ALWAYS_OFF
+    on_turn_on:
+      - light.turn_on:
+          id: stat_led
+      - delay: 1s
+      - switch.turn_off: unit_relay
+    on_turn_off:
+      - light.turn_off: stat_led
+  - platform: gpio
+    pin: GPIO19
+    name: "NanoC6 RGB LED Power"
+    id: rgb_led_power
+    restore_mode: ALWAYS_OFF
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: 9
+      inverted: true
+      mode: INPUT_PULLUP
+      ignore_strapping_warning: true
+    name: "M5Stack NanoC6 Button"
+    on_press:
+      then:
+        - logger.log: "Button Pressed"
+    on_release:
+      then:
+        - logger.log: "Button Released"
